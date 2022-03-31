@@ -1,0 +1,13 @@
+waitress
+sqlalchemy
+pandas
+flask
+flask-cors
+pyjwt
+yfinance
+python-dotenv
+pyarrow
+prometheus_flask_exporter
+psycopg2
+PyPortfolioOpt
+scikit-learn

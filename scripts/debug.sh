@@ -1,0 +1,1 @@
+FLASK_APP=app.py FLASK_MODE=DEBUG FLASK_ENV=development FLASK_RUN_PORT=8090 python -m flask run
