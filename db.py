@@ -26,20 +26,8 @@ class Company(Base):
     ticker = Column(String())
 
     @staticmethod
-    def create(cik, ticker, name):
-        with Session() as session:
-            c = Company()
-            c.cik = cik
-            c.ticker = ticker
-            c.name = name
-            session.add(c)
-            session.commit()
-        return c
-
-    @staticmethod
     def get(ticker):
         try:
-
             with Session() as session:
                 c = session.query(Company).filter(Company.ticker == ticker).one()
             return c
@@ -52,11 +40,135 @@ class Company(Base):
             result = session.query(Company).order_by(Company.ticker).all()
         return result
 
+
+class Earnings(Base):
+    __tablename__ = "earnings"
+    date = Column(Date, primary_key=True, nullable=False)
+    ticker = Column(String(), primary_key=True, nullable=False)
+
     @staticmethod
-    def upsert(items):
-        df = pd.DataFrame(items)
-        with engine.begin() as connection:
-            df.to_sql("companies", index=False, con=connection, if_exists="replace")
+    def by_date(date):
+        with Session() as session:
+            query = (
+                session.query(Earnings)
+                .join(
+                    Company,
+                    Earnings.ticker == Company.ticker,
+                )
+                .filter(Earnings.date == date)
+                .order_by(Company.ticker)
+            )
+        return pd.read_sql(query.statement, session.bind)
+
+    @staticmethod
+    def list(tickers, before=None, after=None):
+        with Session() as session:
+            query = (
+                session.query(Earnings)
+                .join(
+                    Company,
+                    Earnings.ticker == Company.ticker,
+                )
+                .filter(Earnings.ticker.in_(tickers))
+            )
+
+            if before:
+                query = query.filter(Earnings.date < before)
+
+            if after:
+                query = query.filter(Earnings.date >= after)
+
+            query = query.order_by(Earnings.date)
+        return pd.read_sql(query.statement, session.bind)
+
+
+class Dividend(Base):
+    __tablename__ = "dividends"
+    ex_date = Column(Date, primary_key=True, nullable=False)
+    ticker = Column(String(), primary_key=True, nullable=False)
+    dividend_rate = Column(Float())
+    record_date = Column(Date)
+    payment_date = Column(Date)
+    announcement_date = Column(Date)
+
+    @staticmethod
+    def by_date(date):
+        with Session() as session:
+            query = (
+                session.query(Dividend)
+                .join(
+                    Company,
+                    Dividend.ticker == Company.ticker,
+                )
+                .filter(Dividend.ex_date == date)
+                .order_by(Company.ticker)
+            )
+        return pd.read_sql(query.statement, session.bind)
+
+    @staticmethod
+    def list(tickers, before=None, after=None):
+        with Session() as session:
+            query = (
+                session.query(Dividend)
+                .join(
+                    Company,
+                    Dividend.ticker == Company.ticker,
+                )
+                .filter(Dividend.ticker.in_(tickers))
+            )
+
+            if before:
+                query = query.filter(Dividend.ex_date < before)
+
+            if after:
+                query = query.filter(Dividend.ex_date >= after)
+
+            query = query.order_by(Dividend.ex_date)
+        return pd.read_sql(query.statement, session.bind)
+
+
+class Split(Base):
+    __tablename__ = "splits"
+    date = Column(Date, primary_key=True, nullable=False)
+    ticker = Column(String(), primary_key=True, nullable=False)
+    ratio = Column(String())
+    execution_date = Column(Date)
+    announcement_date = Column(Date)
+
+    @staticmethod
+    def by_date(date):
+        with Session() as session:
+            query = (
+                session.query(Split)
+                .join(
+                    Company,
+                    Split.ticker == Company.ticker,
+                )
+                .filter(Split.date == date)
+                .order_by(Company.ticker)
+            )
+        return pd.read_sql(query.statement, session.bind)
+
+    @staticmethod
+    def list(tickers, before=None, after=None):
+        with Session() as session:
+            query = (
+                session.query(Split)
+                .join(
+                    Company,
+                    Split.ticker == Company.ticker,
+                )
+                .filter(Split.ticker.in_(tickers))
+            )
+
+            if before:
+                query = query.filter(Split.date < before)
+
+            if after:
+                query = query.filter(Split.date >= after)
+
+            query = query.order_by(Split.date)
+        return pd.read_sql(query.statement, session.bind)
 
 
 class Price(Base):

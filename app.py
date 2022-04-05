@@ -1,9 +1,9 @@
 import json
 import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta
+import datetime
 from flask import Flask, request
-from flask.json import jsonify
+from flask.json import jsonify, JSONEncoder
 from flask_cors import CORS
 from prometheus_flask_exporter import PrometheusMetrics
 from pypfopt.expected_returns import mean_historical_return
@@ -14,7 +14,22 @@ from pypfopt.efficient_frontier import EfficientFrontier
 from config import config
 import db
 
+
+class CustomJSONEncoder(JSONEncoder):
+    def default(self, obj):
+        try:
+            if isinstance(obj, date):
+                return obj.isoformat()
+            iterable = iter(obj)
+        except TypeError:
+            pass
+        else:
+            return list(iterable)
+        return JSONEncoder.default(self, obj)
+
+
 app = Flask(__name__)
+app.json_encoder = CustomJSONEncoder
 app.config["JSON_SORT_KEYS"] = False
 CORS(app, supports_credentials=True)
 metrics = PrometheusMetrics(app)
@@ -24,8 +39,11 @@ metrics.info("market", "Market API", version="0.1.0")
 class JSONEncoder(json.JSONEncoder):
     def default(self, obj):
 
-        if isinstance(obj, datetime):
-            return str(obj.date())
+        if isinstance(obj, datetime.datetime):
+            return str(obj.isoformat())
+
+        if isinstance(obj, datetime.date):
+            return str(obj.isoformat())
 
         return json.JSONEncoder.default(
             self, obj
@@ -40,12 +58,160 @@ def ping():
     return jsonify({"message": "pong"})
 
 
+@app.route("/api/market/earnings")
+def earnings():
+    args = request.args
+    date = args.get("date", datetime.date.today())
+
+    if isinstance(date, str):
+        try:
+            date = datetime.datetime.fromisoformat(date).date()
+        except Exception as e:
+            return (
+                jsonify(
+                    {
+                        "error": '"date" must be a valid date string i.e. "YYYY-MM-DD"',
+                    }
+                ),
+                400,
+            )
+
+    df = db.Earnings.by_date(date)
+
+    return jsonify(
+        {
+            "date": date,
+            "columns": df.columns.tolist(),
+            "data": df.to_dict(orient="records"),
+        }
+    )
+
+
+@app.route("/api/market/dividends")
+def dividends():
+    args = request.args
+    date = args.get("date", datetime.date.today())
+
+    if isinstance(date, str):
+        try:
+            date = datetime.datetime.fromisoformat(date).date()
+        except Exception as e:
+            return (
+                jsonify(
+                    {
+                        "error": '"date" must be a valid date string i.e. "YYYY-MM-DD"',
+                    }
+                ),
+                400,
+            )
+
+    df = db.Dividend.by_date(date)
+
+    return jsonify(
+        {
+            "date": date,
+            "columns": df.columns.tolist(),
+            "data": df.to_dict(orient="records"),
+        }
+    )
+
+
+@app.route("/api/market/splits")
+def splits():
+    args = request.args
+    date = args.get("date", datetime.date.today())
+
+    if isinstance(date, str):
+        try:
+            date = datetime.datetime.fromisoformat(date).date()
+        except Exception as e:
+            return (
+                jsonify(
+                    {
+                        "error": '"date" must be a valid date string i.e. "YYYY-MM-DD"',
+                    }
+                ),
+                400,
+            )
+
+    df = db.Split.by_date(date)
+    return jsonify(
+        {
+            "date": date,
+            "columns": df.columns.tolist(),
+            "data": df.to_dict(orient="records"),
+        }
+    )
+
+
+@app.route("/api/market/activity")
+def activity():
+    args = request.args
+    tickers = args.get("tickers", [])
+    before = args.get("before", None)
+    after = args.get("after", datetime.date.today() - datetime.timedelta(days=30))
+
+    if isinstance(tickers, str):
+        tickers = tickers.upper().split(",")
+
+    if len(tickers) < 1:
+        return (
+            jsonify(
+                {
+                    "error": '"tickers" is a required query parameter',
+                }
+            ),
+            400,
+        )
+
+    if isinstance(before, str):
+        try:
+            before = datetime.datetime.fromisoformat(before)
+        except Exception as e:
+            return (
+                jsonify(
+                    {
+                        "error": '"before" must be a valid date string i.e. "YYYY-MM-DD"',
+                    }
+                ),
+                400,
+            )
+
+    if isinstance(after, str):
+        try:
+            after = datetime.datetime.fromisoformat(after)
+        except Exception as e:
+            return (
+                jsonify(
+                    {
+                        "error": '"after" must be a valid date string i.e. "YYYY-MM-DD"',
+                    }
+                ),
+                400,
+            )
+
+    earnings = db.Earnings.list(tickers, before=before, after=after)
+    splits = db.Split.list(tickers, before=before, after=after)
+    dividends = db.Dividend.list(tickers, before=before, after=after)
+
+    return jsonify(
+        {
+            "tickers": tickers,
+            "before": before,
+            "after": after,
+            "earnings": earnings.to_dict(orient="records"),
+            "dividends": dividends.to_dict(orient="records"),
+            "splits": splits.to_dict(orient="records"),
+        }
+    )
+
+
 @app.route("/api/market/prices")
 def price():
     args = request.args
     tickers = args.get("tickers", "").upper().split(",")
-    start = args.get("start", datetime.now() - timedelta(days=30))
-    end = args.get("end", datetime.now())
+    start = args.get("start", datetime.datetime.now() - datetime.timedelta(days=30))
+    end = args.get("end", datetime.datetime.now())
 
     if len(tickers) < 1:
         return (
@@ -86,8 +252,8 @@ def performance():
     shares = args.get("shares", ",".join([str(1 / len(tickers))] * len(tickers))).split(
         ","
     )
-    start = args.get("start", datetime.now() - timedelta(days=365))
-    end = args.get("end", datetime.now())
+    start = args.get("start", datetime.datetime.now() - datetime.timedelta(days=365))
+    end = args.get("end", datetime.datetime.now())
     frequency = args.get("frequency", "M").upper()
 
     if len(tickers) < 2:
