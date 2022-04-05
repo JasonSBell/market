@@ -50,7 +50,7 @@ class Earnings(Base):
     def by_date(date):
         with Session() as session:
             query = (
-                session.query(Earnings)
+                session.query(Earnings, Company.cik, Company.name)
                 .join(
                     Company,
                     Earnings.ticker == Company.ticker,
@@ -64,7 +64,7 @@ class Earnings(Base):
     def list(tickers, before=None, after=None):
         with Session() as session:
             query = (
-                session.query(Earnings)
+                session.query(Earnings, Company.cik, Company.name)
                 .join(
                     Company,
                     Earnings.ticker == Company.ticker,
@@ -95,7 +95,7 @@ class Dividend(Base):
     def by_date(date):
         with Session() as session:
             query = (
-                session.query(Dividend)
+                session.query(Dividend, Company.cik, Company.name)
                 .join(
                     Company,
                     Dividend.ticker == Company.ticker,
@@ -109,7 +109,7 @@ class Dividend(Base):
     def list(tickers, before=None, after=None):
         with Session() as session:
             query = (
-                session.query(Dividend)
+                session.query(Dividend, Company.cik, Company.name)
                 .join(
                     Company,
                     Dividend.ticker == Company.ticker,
@@ -139,7 +139,7 @@ class Split(Base):
     def by_date(date):
         with Session() as session:
             query = (
-                session.query(Split)
+                session.query(Split, Company.cik, Company.name)
                 .join(
                     Company,
                     Split.ticker == Company.ticker,
@@ -153,7 +153,7 @@ class Split(Base):
     def list(tickers, before=None, after=None):
         with Session() as session:
             query = (
-                session.query(Split)
+                session.query(Split, Company.cik, Company.name)
                 .join(
                     Company,
                     Split.ticker == Company.ticker,

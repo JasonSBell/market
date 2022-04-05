@@ -15,10 +15,18 @@ from config import config
 import db
 
 
+def snake_case_to_camel_case(name):
+    tokens = name.split("_")
+    if len(tokens) < 2:
+        return "".join(tokens)
+
+    return tokens[0] + "".join(word.title() for word in tokens[1:])
+
+
 class CustomJSONEncoder(JSONEncoder):
     def default(self, obj):
         try:
-            if isinstance(obj, date):
+            if isinstance(obj, datetime.date):
                 return obj.isoformat()
             iterable = iter(obj)
         except TypeError:
@@ -78,6 +86,8 @@ def earnings():
 
     df = db.Earnings.by_date(date)
 
+    df.columns = df.columns.to_series().apply(snake_case_to_camel_case)
+
     return jsonify(
         {
             "date": date,
@@ -107,6 +117,8 @@ def dividends():
 
     df = db.Dividend.by_date(date)
 
+    df.columns = df.columns.to_series().apply(snake_case_to_camel_case)
+
     return jsonify(
         {
             "date": date,
@@ -135,6 +147,9 @@ def splits():
             )
 
     df = db.Split.by_date(date)
+
+    df.columns = df.columns.to_series().apply(snake_case_to_camel_case)
+
     return jsonify(
         {
             "date": date,
@@ -193,6 +208,10 @@ def activity():
     earnings = db.Earnings.list(tickers, before=before, after=after)
     splits = db.Split.list(tickers, before=before, after=after)
     dividends = db.Dividend.list(tickers, before=before, after=after)
+
+    earnings.columns = earnings.columns.to_series().apply(snake_case_to_camel_case)
+    splits.columns = splits.columns.to_series().apply(snake_case_to_camel_case)
+    dividends.columns = dividends.columns.to_series().apply(snake_case_to_camel_case)
 
     return jsonify(
         {
