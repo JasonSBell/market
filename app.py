@@ -164,7 +164,7 @@ def activity():
     args = request.args
     tickers = args.get("tickers", [])
     before = args.get("before", None)
-    after = args.get("after", datetime.date.today() - datetime.timedelta(days=30))
+    after = args.get("after", datetime.date.today() - datetime.timedelta(days=120))
 
     if isinstance(tickers, str):
         tickers = tickers.upper().split(",")
