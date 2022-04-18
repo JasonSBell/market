@@ -206,6 +206,38 @@ class Price(Base):
         )
 
     @staticmethod
+    def company(ticker, start, end):
+
+        with Session() as session:
+            results = pd.read_sql(
+                session.query(Price)
+                .filter(Price.symbol == ticker)
+                .filter(Price.date >= start)
+                .filter(Price.date < end)
+                .statement,
+                session.bind,
+            )
+        results["symbol"].dropna().to_list()
+
+        results["date"] = pd.to_datetime(results["date"])
+
+        results.drop(columns=["symbol", "adj_close"], inplace=True)
+
+        return results.set_index("date").ffill().replace({np.nan: None})
+
+    @staticmethod
+    def on(tickers, date):
+        with Session() as session:
+            results = pd.read_sql(
+                session.query(Price)
+                .filter(Price.symbol.in_(tickers))
+                .filter(Price.date == date)
+                .statement,
+                session.bind,
+            )
+        return results
+
+    @staticmethod
     def upsert(prices, init=False):
         # Convert column names to snake case.
         print(prices)

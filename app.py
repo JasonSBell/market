@@ -398,5 +398,25 @@ def info(ticker):
     )
 
 
+@app.route("/api/market/<ticker>/price")
+def market_price(ticker):
+    args = request.args
+    start = args.get("start", datetime.datetime.now() - datetime.timedelta(days=30))
+    end = args.get("end", datetime.datetime.now())
+
+    df = db.Price.company(ticker=ticker, start=start, end=end).reset_index()
+    df["date"] = df["date"].map(lambda x: x.isoformat())
+
+    return jsonify(
+        {
+            "ticker": ticker,
+            "start": start,
+            "end": end,
+            "columns": df.columns.tolist(),
+            "data": df.values.tolist(),
+        }
+    )
+
+
 if __name__ == "__main__":
     app.run(port=config.port, host="0.0.0.0")
