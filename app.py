@@ -159,6 +159,37 @@ def splits():
     )
 
 
+@app.route("/api/market/congressional_trades")
+def congressional_trades():
+    args = request.args
+    date = args.get("date", datetime.date.today())
+
+    if isinstance(date, str):
+        try:
+            date = datetime.datetime.fromisoformat(date).date()
+        except Exception as e:
+            return (
+                jsonify(
+                    {
+                        "error": '"date" must be a valid date string i.e. "YYYY-MM-DD"',
+                    }
+                ),
+                400,
+            )
+
+    df = db.CongressionalTrade.by_date(date)
+
+    df.columns = df.columns.to_series().apply(snake_case_to_camel_case)
+
+    return jsonify(
+        {
+            "date": date,
+            "columns": df.columns.tolist(),
+            "data": df.to_dict(orient="records"),
+        }
+    )
+
+
 @app.route("/api/market/activity")
 def activity():
     args = request.args
@@ -208,10 +239,16 @@ def activity():
     earnings = db.Earnings.list(tickers, before=before, after=after)
     splits = db.Split.list(tickers, before=before, after=after)
     dividends = db.Dividend.list(tickers, before=before, after=after)
+    congressional_trades = db.CongressionalTrade.list(
+        tickers, before=before, after=after
+    )
 
     earnings.columns = earnings.columns.to_series().apply(snake_case_to_camel_case)
     splits.columns = splits.columns.to_series().apply(snake_case_to_camel_case)
     dividends.columns = dividends.columns.to_series().apply(snake_case_to_camel_case)
+    congressional_trades.columns = congressional_trades.columns.to_series().apply(
+        snake_case_to_camel_case
+    )
 
     return jsonify(
         {
@@ -221,6 +258,7 @@ def activity():
             "earnings": earnings.to_dict(orient="records"),
             "dividends": dividends.to_dict(orient="records"),
             "splits": splits.to_dict(orient="records"),
+            "congressionalTrades": congressional_trades.to_dict(orient="records"),
         }
     )
 

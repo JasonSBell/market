@@ -171,6 +171,54 @@ class Split(Base):
         return pd.read_sql(query.statement, session.bind)
 
 
+class CongressionalTrade(Base):
+    __tablename__ = "congressional_trades"
+    transaction_date = Column(Date, primary_key=True, nullable=False)
+    ticker = Column(String, primary_key=True, nullable=False)
+    name = Column(String, primary_key=True, nullable=False)
+    disclosure_date = Column(Date)
+    description = Column(String)
+    type = Column(String)
+    amount = Column(String)
+    comment = Column(String)
+    url = Column(String)
+
+    @staticmethod
+    def by_date(date):
+        with Session() as session:
+            query = (
+                session.query(CongressionalTrade, Company.cik, Company.name)
+                .join(
+                    CongressionalTrade,
+                    CongressionalTrade.ticker == Company.ticker,
+                )
+                .filter(CongressionalTrade.transaction_date == date)
+                .order_by(Company.ticker)
+            )
+        return pd.read_sql(query.statement, session.bind)
+
+    @staticmethod
+    def list(tickers, before=None, after=None):
+        with Session() as session:
+            query = (
+                session.query(CongressionalTrade, Company.cik, Company.name)
+                .join(
+                    Company,
+                    CongressionalTrade.ticker == Company.ticker,
+                )
+                .filter(CongressionalTrade.ticker.in_(tickers))
+            )
+
+            if before:
+                query = query.filter(CongressionalTrade.transaction_date < before)
+
+            if after:
+                query = query.filter(CongressionalTrade.transaction_date >= after)
+
+            query = query.order_by(CongressionalTrade.transaction_date)
+        return pd.read_sql(query.statement, session.bind)
+
+
 class Price(Base):
     __tablename__ = "prices"
     date = Column(Date, primary_key=True, nullable=False)
