@@ -76,6 +76,8 @@ def main():
             )
             exit(1)
 
+        tickers = [t.upper() for t in tickers]
+
         log(f"Downloading data for {len(tickers)} symbol: {tickers}")
 
         df = download(tickers, period="max")
