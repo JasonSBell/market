@@ -404,7 +404,7 @@ def market_price(ticker):
     start = args.get("start", datetime.datetime.now() - datetime.timedelta(days=30))
     end = args.get("end", datetime.datetime.now())
 
-    df = db.Price.company(ticker=ticker, start=start, end=end).reset_index()
+    df = db.Price.company(ticker=ticker.upper(), start=start, end=end).reset_index()
     df["date"] = df["date"].map(lambda x: x.isoformat())
 
     return jsonify(
