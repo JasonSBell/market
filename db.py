@@ -177,7 +177,7 @@ class CongressionalTrade(Base):
     ticker = Column(String, primary_key=True, nullable=False)
     name = Column(String, primary_key=True, nullable=False)
     disclosure_date = Column(Date)
-    description = Column(String)
+    body = Column(String)
     type = Column(String)
     amount = Column(String)
     comment = Column(String)
@@ -198,7 +198,7 @@ class CongressionalTrade(Base):
         return pd.read_sql(query.statement, session.bind)
 
     @staticmethod
-    def list(tickers, before=None, after=None):
+    def list(tickers, before=None, after=None, body=None):
         with Session() as session:
             query = (
                 session.query(CongressionalTrade, Company.cik, Company.name)
@@ -214,6 +214,9 @@ class CongressionalTrade(Base):
 
             if after:
                 query = query.filter(CongressionalTrade.transaction_date >= after)
+
+            if body:
+                query = query.filter(CongressionalTrade.body == body)
 
             query = query.order_by(CongressionalTrade.transaction_date)
         return pd.read_sql(query.statement, session.bind)
