@@ -20,6 +20,13 @@ config = SimpleNamespace(
         password=os.environ.get("POSTGRES_PASSWORD", "example"),
         database=os.environ.get("POSTGRES_DATABASE", "allokate"),
     ),
+    mongo=SimpleNamespace(
+        host=os.environ.get("MONGO_HOST", "localhost"),
+        port=int(os.environ.get("MONGO_PORT", "27017")),
+        user=os.environ.get("MONGO_USER", "root"),
+        password=os.environ.get("MONGO_PASSWORD", "password"),
+        db=os.environ.get("MONGO_DATABASE", "allokate"),
+    ),
 )
 
 if __name__ == "__main__":

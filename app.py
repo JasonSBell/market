@@ -9,10 +9,11 @@ from prometheus_flask_exporter import PrometheusMetrics
 from pypfopt.expected_returns import mean_historical_return
 from pypfopt.risk_models import CovarianceShrinkage
 from pypfopt.efficient_frontier import EfficientFrontier
-
+from bson import ObjectId
 
 from config import config
 import db
+import mongo
 
 
 def snake_case_to_camel_case(name):
@@ -46,6 +47,9 @@ metrics.info("market", "Market API", version="0.1.0")
 
 class JSONEncoder(json.JSONEncoder):
     def default(self, obj):
+
+        if isinstance(obj, ObjectId):
+            return str(obj)
 
         if isinstance(obj, datetime.datetime):
             return str(obj.isoformat())
@@ -242,6 +246,7 @@ def activity():
     congressional_trades = db.CongressionalTrade.list(
         tickers, before=before, after=after
     )
+    transcripts = mongo.Articles.transcripts(tickers, before=before, after=after)
 
     earnings.columns = earnings.columns.to_series().apply(snake_case_to_camel_case)
     splits.columns = splits.columns.to_series().apply(snake_case_to_camel_case)
@@ -259,6 +264,7 @@ def activity():
             "dividends": dividends.to_dict(orient="records"),
             "splits": splits.to_dict(orient="records"),
             "congressionalTrades": congressional_trades.to_dict(orient="records"),
+            "transcripts": transcripts,
         }
     )
 

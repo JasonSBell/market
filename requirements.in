@@ -11,3 +11,4 @@ prometheus_flask_exporter
 psycopg2
 PyPortfolioOpt
 scikit-learn
+pymongo
