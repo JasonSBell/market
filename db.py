@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, Float, Date, func, create_engine
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.inspection import inspect
+from sqlalchemy.sql import text
 import pandas as pd
 import numpy as np
 
@@ -22,8 +23,13 @@ Base = declarative_base()
 class Company(Base):
     __tablename__ = "companies"
     cik = Column(Integer, primary_key=True)
-    name = Column(String(), unique=True, nullable=False)
-    ticker = Column(String())
+    name = Column(String())
+    ticker = Column(String(), unique=True, nullable=False)
+    sector = Column(String())
+    description = Column(String())
+    shares_outstanding = Column(String())
+    logo = Column(String())
+    last_modified = Column(Date)
 
     @staticmethod
     def get(ticker):
@@ -39,6 +45,101 @@ class Company(Base):
         with Session() as session:
             result = session.query(Company).order_by(Company.ticker).all()
         return result
+
+    @staticmethod
+    def upsert_basic_info(ticker, name, logo, sector, description, shares_outstanding):
+        with Session() as session:
+            data = {
+                "ticker": ticker,
+                "name": name,
+                "logo": logo,
+                "sector": sector,
+                "description": description,
+                "shares_outstanding": shares_outstanding,
+            }
+
+            statement = text(
+                """INSERT INTO companies (
+                ticker,
+                name,
+                logo,
+                sector,
+                description,
+                shares_outstanding
+            ) VALUES (
+                :ticker,
+                :name,
+                :logo,
+                :sector,
+                :description,
+                :shares_outstanding
+            ) ON CONFLICT (ticker) DO UPDATE SET 
+                name=:name,
+                logo=:logo,
+                sector=:sector,
+                description=:description,
+                shares_outstanding=:shares_outstanding
+            """
+            )
+
+            session.execute(statement, data)
+            session.commit()
+
+    @staticmethod
+    def upsert_cik_info(ticker, cik, name):
+        with Session() as session:
+            data = {
+                "ticker": ticker,
+                "cik": cik,
+                "name": name,
+            }
+
+            statement = text(
+                """INSERT INTO companies (
+                ticker,
+                cik,
+                name
+            ) VALUES (
+                :ticker,
+                :cik,
+                :name
+            ) ON CONFLICT (ticker) DO UPDATE SET 
+                cik=:cik
+            """
+            )
+
+            session.execute(statement, data)
+            session.commit()
+
+    def bulk_upsert_cik_info(companies):
+        with Session() as session:
+            data = []
+            for company in companies:
+                data.append(
+                    {
+                        "ticker": company.ticker,
+                        "cik": company.cik,
+                        "name": company.name,
+                    }
+                )
+
+            statement = text(
+                """INSERT INTO companies (
+                ticker,
+                cik,
+                name
+            ) VALUES (
+                :ticker,
+                :cik,
+                :name
+            ) ON CONFLICT (ticker) DO UPDATE SET 
+                cik=:cik
+            """
+            )
+
+            for line in data:
+                session.execute(statement, line)
+            session.commit()
 
 
 class Earnings(Base):
