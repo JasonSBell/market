@@ -6,6 +6,7 @@ from sqlalchemy.inspection import inspect
 from sqlalchemy.sql import text
 import pandas as pd
 import numpy as np
+from datetime import date
 
 from config import config
 
@@ -22,9 +23,9 @@ Base = declarative_base()
 
 class Company(Base):
     __tablename__ = "companies"
-    cik = Column(Integer, primary_key=True)
+    cik = Column(Integer)
     name = Column(String())
-    ticker = Column(String(), unique=True, nullable=False)
+    ticker = Column(String(), primary_key=True)
     sector = Column(String())
     description = Column(String())
     shares_outstanding = Column(String())
@@ -56,6 +57,7 @@ class Company(Base):
                 "sector": sector,
                 "description": description,
                 "shares_outstanding": shares_outstanding,
+                "last_modified": date.today(),
             }
 
             statement = text(
@@ -65,20 +67,23 @@ class Company(Base):
                 logo,
                 sector,
                 description,
-                shares_outstanding
+                shares_outstanding,
+                last_modified
             ) VALUES (
                 :ticker,
                 :name,
                 :logo,
                 :sector,
                 :description,
-                :shares_outstanding
+                :shares_outstanding,
+                :last_modified
             ) ON CONFLICT (ticker) DO UPDATE SET 
                 name=:name,
                 logo=:logo,
                 sector=:sector,
                 description=:description,
-                shares_outstanding=:shares_outstanding
+                shares_outstanding=:shares_outstanding,
+                last_modified=:last_modified
             """
             )
 
