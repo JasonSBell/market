@@ -14,6 +14,7 @@ from bson import ObjectId
 from config import config
 import db
 import mongo
+from sickle import update_basic_company_info
 
 
 def snake_case_to_camel_case(name):
@@ -438,6 +439,14 @@ def performance():
 @app.route("/api/market/<ticker>")
 def info(ticker):
     c = db.Company.get(ticker.upper())
+
+    if c.last_modified == None:
+        info = update_basic_company_info(ticker.upper())
+        c.description = info.description
+        c.name = info.name
+        c.sector = info.sector
+        c.shares_outstanding = info.shares_outstanding
+        c.logo = info.logo
 
     if c == None:
         return jsonify({"error": f'no company found with ticker "{ticker}"'}), 404
