@@ -304,7 +304,16 @@ def price():
 def tickers():
     companies = db.Company.list()
     return jsonify(
-        [{"cik": c.cik, "ticker": c.ticker, "name": c.name} for c in companies]
+        [
+            {
+                "cik": c.cik,
+                "ticker": c.ticker,
+                "name": c.name,
+                "sector": c.sector,
+                "logo": c.logo,
+            }
+            for c in companies
+        ]
     )
 
 
@@ -438,6 +447,10 @@ def info(ticker):
             "ticker": c.ticker,
             "cik": c.cik,
             "name": c.name,
+            "sector": c.sector,
+            "logo": c.logo,
+            "description": c.description,
+            "sharesOutstanding": c.shares_outstanding,
         }
     )
 
