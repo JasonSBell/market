@@ -45,8 +45,10 @@ def get_basic_company_info(ticker):
             "name": data["shortName"],
             "logo": data["logo_url"],
             "description": data["longBusinessSummary"],
-            "sector": data["sector"],
-            "shares_outstanding": data["sharesOutstanding"],
+            "sector": data["sector"] if "sector" in data else None,
+            "shares_outstanding": data["sharesOutstanding"]
+            if "sharesOutstanding" in data
+            else None,
         }
     )
 

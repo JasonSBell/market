@@ -33,6 +33,18 @@ class Company(Base):
     last_modified = Column(Date)
 
     @staticmethod
+    def next():
+        try:
+            with Session() as session:
+                c = session.query(Company).filter(Company.last_modified == None).first()
+                count = (
+                    session.query(Company).filter(Company.last_modified == None).count()
+                )
+            return [c, count]
+        except sqlalchemy.exc.NoResultFound:
+            return [None, 0]
+
+    @staticmethod
     def get(ticker):
         try:
             with Session() as session:
