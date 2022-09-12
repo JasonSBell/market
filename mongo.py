@@ -20,7 +20,7 @@ class Articles:
         if after and isinstance(after, date):
             after = datetime(after.year, after.month, after.day)
 
-        query = {"tags": "earnings call", "tags": {"$in": tickers}}
+        query = {"tags": "transcript", "tags": {"$in": tickers}}
 
         if before:
             if "date" not in query:
