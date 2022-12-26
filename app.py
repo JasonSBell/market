@@ -248,6 +248,7 @@ def activity():
         tickers, before=before, after=after
     )
     transcripts = mongo.Articles.transcripts(tickers, before=before, after=after)
+    news = mongo.Articles.news(tickers, before=before, after=after)
 
     earnings.columns = earnings.columns.to_series().apply(snake_case_to_camel_case)
     splits.columns = splits.columns.to_series().apply(snake_case_to_camel_case)
@@ -265,7 +266,8 @@ def activity():
             "dividends": dividends.to_dict(orient="records"),
             "splits": splits.to_dict(orient="records"),
             "congressionalTrades": congressional_trades.to_dict(orient="records"),
-            "transcripts": transcripts,
+            "transcripts": transcripts,           
+            "news": news,
         }
     )
 
@@ -303,7 +305,9 @@ def price():
 
 @app.route("/api/market/tickers")
 def tickers():
-    companies = db.Company.list()
+    args = request.args
+    search = args.get("search", "")
+    companies = db.Company.list(search)
     return jsonify(
         [
             {
@@ -451,6 +455,10 @@ def info(ticker):
     if c == None:
         return jsonify({"error": f'no company found with ticker "{ticker}"'}), 404
 
+    start =  datetime.datetime.now() - datetime.timedelta(days=30)
+    end =  datetime.datetime.now()
+    price = db.Price.company(ticker=ticker, start=start, end=end).reset_index().iloc[-1]['close']
+   
     return jsonify(
         {
             "ticker": c.ticker,
@@ -460,6 +468,7 @@ def info(ticker):
             "logo": c.logo,
             "description": c.description,
             "sharesOutstanding": c.shares_outstanding,
+            "price": price,
         }
     )
 

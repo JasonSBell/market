@@ -20,7 +20,34 @@ class Articles:
         if after and isinstance(after, date):
             after = datetime(after.year, after.month, after.day)
 
-        query = {"tags": "transcript", "tags": {"$in": tickers}}
+        query = {'$and' : [{"tags": "transcript"}, {"tags": {"$in": tickers}}]}
+
+        if before:
+            if "date" not in query:
+                query["date"] = {}
+            query["date"]["$lt"] = (
+                datetime.fromisoformat(before) if isinstance(before, str) else before
+            )
+        if after:
+            if "date" not in query:
+                query["date"] = {}
+            query["date"]["$gte"] = (
+                datetime.fromisoformat(after) if isinstance(after, str) else after
+            )
+
+        collection = client[config.mongo.db]["articles"]
+
+        return list(collection.find(query))
+    
+    @staticmethod
+    def news(tickers, before=None, after=None):
+
+        if before and isinstance(before, date):
+            before = datetime(before.year, before.month, before.day)
+        if after and isinstance(after, date):
+            after = datetime(after.year, after.month, after.day)
+
+        query = {'$and' : [{"tags": {'$nin': ["transcript"]}}, {"tags": {"$in": tickers}}]}
 
         if before:
             if "date" not in query:

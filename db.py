@@ -54,9 +54,13 @@ class Company(Base):
             return None
 
     @staticmethod
-    def list():
+    def list(search=''):
         with Session() as session:
-            result = session.query(Company).order_by(Company.ticker).all()
+            result = (
+                session.query(Company)
+                .filter(Company.ticker.ilike("%"+search+"%"))
+                .all()
+            )
         return result
 
     @staticmethod
