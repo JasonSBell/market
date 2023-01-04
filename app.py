@@ -457,7 +457,9 @@ def info(ticker):
 
     start =  datetime.datetime.now() - datetime.timedelta(days=30)
     end =  datetime.datetime.now()
-    price = db.Price.company(ticker=ticker, start=start, end=end).reset_index().iloc[-1]['close']
+    
+    pricing = db.Price.company(ticker=ticker, start=start, end=end)
+    price = pricing.reset_index().iloc[-1]['close'] if not pricing.empty else None
    
     return jsonify(
         {
